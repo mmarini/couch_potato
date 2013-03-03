@@ -7,9 +7,17 @@ require 'ostruct'
 JSON.create_id = 'ruby_class'
 
 module CouchPotato
-  Config = Struct.new(:database_name, :split_design_documents_per_view, :default_language).new
+  Config = Struct.new(:database_name, :validation_framework,
+    :split_design_documents_per_view, :default_language, :protocol,
+    :host, :port, :username, :password).new
+  Config.validation_framework = :active_model
   Config.split_design_documents_per_view = false
   Config.default_language = :javascript
+  Config.protocol = 'http'
+  Config.host = '127.0.0.1'
+  Config.port = nil
+  Config.username = nil
+  Config.password = nil
 
   class NotFound < StandardError; end
 
@@ -54,7 +62,10 @@ module CouchPotato
     if database_name.match(%r{https?://})
       database_name
     else
-      "http://127.0.0.1:5984/#{database_name}"
+      security = Config.password.nil? ? "#{Config.username}" : "#{Config.username}:#{Config.password}"
+      security += "@" if !security.nil?
+      host = Config.port.nil? ? Config.host : "#{Config.host}:#{Config.port}"
+      "#{Config.protocol}://#{security}#{host}/#{database_name}"
     end
   end
 end
